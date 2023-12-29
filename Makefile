@@ -50,6 +50,7 @@ DOS_DEPS = \
 	dos/fat32/lib.inc \
 	dos/fat32/regs.inc \
 	dos/fat32/sdcard.inc \
+	dos/fat32/spi.inc \
 	dos/fat32/text_input.inc \
 	dos/functions.inc \
 	dos/vera.inc
