@@ -1,0 +1,219 @@
+
+
+	*=$fe00
+
+DOS	=$4000
+
+dos_seclstn	=DOS + 3 * 0
+dos_sectlk	=DOS + 3 * 1
+dos_iecin	=DOS + 3 * 2
+dos_iecout	=DOS + 3 * 3
+dos_untlk	=DOS + 3 * 4	; note: currently no-op
+dos_unlsn	=DOS + 3 * 5
+dos_listn	=DOS + 3 * 6
+dos_talk	=DOS + 3 * 7	; note: currently same as listn
+
+serial_tlklstn	=$f0d7
+
+BANK		=$e802
+
+DOSBANK		=14	; DOS runs in memory mapped from $070000-$077fff
+BASBANK		=0	; BASIC runs in bank 0
+
+
+dos_flags	=$03fe	; for testing for now
+
+DOS_TALK	=$80
+DOS_LISTEN	=$40
+
+curdev		=$d4
+cursec		=$d3
+
+#if 1
+	
+install	.(
+	lda #$4c	; JMP
+	ldx #<talk_listn_unlstn
+	ldy #>talk_listn_unlstn
+	sta $f0d8	; note this is called for TALK, LISTEN and UNLISTEN
+	stx $f0d9	; with either $20, $40, or $3F in A (and PHA'd)
+	sty $f0da
+
+	ldx #<seclstn
+	ldy #>seclstn
+	sta $f145
+	stx $f146
+	sty $f147
+
+	ldx #<untlk
+	ldy #>untlk
+	sta $f1ae
+	stx $f1af
+	sty $f1b0
+
+	ldx #<iecin
+	ldy #>iecin
+	sta $f1c2
+	stx $f1c3
+	sty $f1c4
+
+	ldx #<sectlk
+	ldy #>sectlk
+	sta $f195
+	stx $f196
+	sty $f197
+
+	ldx #<iecout
+	ldy #>iecout
+	sta $f19e
+	stx $f19f
+	sty $f1a0
+	lda #$ea	; NOP
+	sta $f1a1
+
+	rts
+	.)
+
+#endif
+
+	; AC is free. It needs to be #$40 when going back
+talk_listn_unlstn .(
+	cmp #$3f
+	beq unlisten
+
+	php
+	phx
+	sei
+	lda #DOSBANK
+	sta BANK
+	jsr dos_talk	; note: DOS currently has same code for talk && listen 
+	lda #BASBANK
+	sta BANK
+	pla		; $20 for talk, $40 for listen
+	pha
+	bcs no_dev
+
+	asl
+	ora dos_flags
+	sta dos_flags
+	plx
+	plp
+	clc
+	rts
+
+no_dev	asl
+	eor #$ff
+	and dos_flags
+	sta dos_flags
+	plx
+	plp
+orig_unlsn
+	lda $e840
+	jmp $f0db
+
+unlisten
+	bit dos_flags
+	bpl orig_unlsn
+	php
+	sei
+	lda #DOSBANK
+	sta BANK
+	jsr dos_unlsn
+	lda #BASBANK
+	sta BANK
+	plp
+	pla
+	rts
+	.)
+
+sectlk	.(
+	bit dos_flags
+	bvc not_dos
+	phx
+	php
+	sei
+	ldx #DOSBANK
+	stx BANK
+	jsr dos_sectlk
+	ldx #BASBANK
+	stx BANK
+	plp
+	plx
+	rts
+not_dos
+	jsr $f109
+	jmp $f198	
+	.)
+
+iecout	.(
+	bit dos_flags
+	bpl not_dos
+	phx
+	php
+	sei
+	ldx #DOSBANK
+	stx BANK
+	jsr dos_iecout
+	ldx #BASBANK
+	stx BANK
+	plp
+	plx
+	rts
+not_dos
+	bit $a0
+	bmi l1
+	jmp $f1a2
+l1	jmp $f1a6
+	.)
+
+untlk	.(
+	bit dos_flags
+	bvc not_dos
+	; no-op
+	rts
+not_dos	
+	lda $e840
+	jmp $f1b1	
+	rts
+	.)
+
+seclstn	.(
+	bit dos_flags
+	bpl not_dos
+	phx
+	php
+	sei
+	ldx #DOSBANK
+	stx BANK
+	jsr dos_seclstn
+	ldx #BASBANK
+	stx BANK
+	plp
+	plx
+	rts
+
+not_dos	jsr $f109
+	jmp $f148
+	.)
+
+iecin	.(
+	bit dos_flags
+	bvc not_dos
+	php
+	phx
+	sei
+	ldx #DOSBANK
+	stx BANK
+	jsr dos_iecin
+	ldx #BASBANK
+	stx BANK
+	plx
+	plp
+	rts
+not_dos
+	sta $e821
+	jmp $f1c5
+	.)
+
+	
+
