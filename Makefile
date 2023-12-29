@@ -28,6 +28,7 @@ DOS_SOURCES = \
 	dos/fat32/fat32.s \
 	dos/fat32/mkfs.s \
 	dos/fat32/sdcard.s \
+	dos/fat32/spi.s \
 	dos/fat32/text_input.s \
 	dos/zeropage.s \
 	dos/jumptab.s \

@@ -8,6 +8,8 @@
 
 	.export sector_buffer, sector_buffer_end, sector_lba
 
+	.import spi_ctrl, spi_read, spi_write, spi_select, spi_deselect
+
 	.bss
 cmd_idx = sdcard_param
 cmd_arg = sdcard_param + 1
@@ -62,76 +64,6 @@ wait_ready:
 @done:	sec
 	rts
 
-;-----------------------------------------------------------------------------
-; deselect card
-;
-; clobbers: A
-;-----------------------------------------------------------------------------
-deselect:
-	lda SPI_CTRL
-	and #(SPI_CTRL_SELECT_MASK ^ $FF)
-	sta SPI_CTRL
-
-	jmp spi_read
-
-;-----------------------------------------------------------------------------
-; select card
-;
-; clobbers: A,X,Y
-;-----------------------------------------------------------------------------
-select:	lda SPI_CTRL
-	ora #SPI_CTRL_SELECT_SDCARD
-	sta SPI_CTRL
-
-	jsr spi_read
-	jsr wait_ready
-	bcc @error
-	rts
-
-@error:	jsr deselect
-	clc
-	rts
-
-;-----------------------------------------------------------------------------
-; spi_read
-;
-; result in A
-;-----------------------------------------------------------------------------
-spi_read:
-	lda #$FF	; 2
-	sta SPI_DATA	; 4
-@1:	bit SPI_CTRL	; 4
-	bmi @1		; 2 + 1 if branch
-	lda SPI_DATA	; 4
-	rts		; 6
-			; >= 22 cycles
-
-.macro spi_read_macro
-	.local @1
-	lda #$FF	; 2
-	sta SPI_DATA	; 4
-@1:	bit SPI_CTRL	; 4
-	bmi l1		; 2 + 1 if branch
-	lda SPI_DATA	; 4
-.endmacro
-
-;-----------------------------------------------------------------------------
-; spi_write
-;
-; byte to write in A
-;-----------------------------------------------------------------------------
-spi_write:
-	sta SPI_DATA
-@1:	bit SPI_CTRL
-	bmi @1
-	rts
-
-.macro spi_write_macro
-	.local @1
-	sta SPI_DATA
-@1:	bit SPI_CTRL
-	bmi @1
-.endmacro
 
 ;-----------------------------------------------------------------------------
 ; send_cmd - Send cmdbuf
@@ -140,10 +72,12 @@ spi_write:
 ;-----------------------------------------------------------------------------
 send_cmd:
 	; Make sure card is deselected
-	jsr deselect
+	jsr spi_deselect
 
 	; Select card
-	jsr select
+	jsr spi_select
+
+	jsr wait_ready
 	bcc @error
 
 	; Send the 6 cmdbuf bytes
@@ -173,6 +107,7 @@ send_cmd:
 	rts
 
 @error:	; Error
+	jsr spi_deselect
 	clc
 	rts
 
@@ -231,7 +166,7 @@ send_cmd:
 sdcard_init:
 	; Deselect card and set slow speed (< 400kHz)
 	lda #SPI_CTRL_SLOWCLK
-	sta SPI_CTRL
+	jsr spi_ctrl
 
 	; Generate at least 74 SPI clock cycles with device deselected
 	ldx #10
@@ -286,19 +221,25 @@ sdcard_init:
 	jsr spi_read
 
 	; Select full speed
-	jsr deselect
+	jsr spi_deselect
 	lda #0
-	sta SPI_CTRL
+	jsr spi_ctrl
 
 	; Success
 	sec
 	rts
 
-@error:	jsr deselect
+@error:	jsr spi_deselect
 
 	; Error
 	clc
 	rts
+
+;-----------------------------------------------------------------------------
+; dummy
+
+.macro spi_write_macro
+.endmacro
 
 ;-----------------------------------------------------------------------------
 ; sdcard_read_sector
@@ -325,7 +266,7 @@ sdcard_read_sector:
 	bne @1
 
 	; Timeout error
-	jsr deselect
+	jsr spi_deselect
 	clc
 	rts
 
@@ -421,7 +362,7 @@ sdcard_read_sector:
 	jsr spi_read
 .endif
 	; Success
-	jsr deselect
+	jsr spi_deselect
 	sec
 	rts
 
@@ -483,12 +424,12 @@ sdcard_write_sector:
 	jsr spi_write
 
 	; Success
-	jsr deselect
+	jsr spi_deselect
 	sec
 	rts
 
 @error:	; Error
-	jsr deselect
+	jsr spi_deselect
 	clc
 	rts
 
@@ -555,6 +496,6 @@ sdcard_check_alive:
 	bpl @2
 
 	php
-	jsr deselect
+	jsr spi_deselect
 	plp
 	rts
