@@ -1,0 +1,19 @@
+
+MEMORY {
+
+	ZPDOS:    start = $0010, size = $000B;	# DOS
+
+        DOS:      start = $4000, size = $4000, fill=yes, fillval=$AA;
+
+	DOSDAT:   start = $3000, size = $1000;  # there is a lot of space free here, too (?)
+}
+
+SEGMENTS {
+        ZPDOS:        load = ZPDOS,    type = zp;
+
+        dos_jmptab:   load = DOS,      type = ro;
+        CODE:         load = DOS,      type = ro;
+
+        BSS:          load = DOSDAT,   type = bss;
+}
+
