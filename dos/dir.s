@@ -23,7 +23,7 @@
 .include "fat32/fat32.inc"
 .include "fat32/regs.inc"
 
-DIRSTART = $0801 ; load address of directory
+DIRSTART = $0401 ; load address of directory
 
 .bss
 
