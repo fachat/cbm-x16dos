@@ -115,14 +115,16 @@ talk_listn_unlstn .(
 	ldx #BASBANK
 	stx BANK
 	tsx
-	lda $0103,x 	; $40 for talk, $20 for listen
-	bcs no_dev
 
+	lda flags
+	and #%00111111
+	bcs no_dev
 	; move the IEEE TALK/LISTEN commands into right bits for flags
-	asl
 	.assert DOS_LISTEN == $40, "check on flag"
 	.assert DOS_TALK == $80, "check on flag"
-	ora flags
+	lsr		; keep C for bit 0 ...
+	ora $0103,x 	; $40 for talk, $20 for listen
+	rol		; ... restore bit 0
 	sta flags
 	plx
 	plp
@@ -160,6 +162,7 @@ sectlk	.(
 	.assert DOS_TALK == $80, "check on flag"
 	bit flags
 	bpl not_dos
+&fix_sectalk
 	phx
 	php
 	sei
@@ -216,6 +219,7 @@ not_dos
 seclstn	.(
 	.assert DOS_LISTEN == $40, "check on flag"
 	bit flags
+	bmi fix_sectalk		; catch buggy softare calling seclisten instead of sectalk
 	bvc not_dos
 	phx
 	php
