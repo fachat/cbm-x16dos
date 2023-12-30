@@ -45,18 +45,18 @@ ieee_status = status
 ram_bank   = 0
 
 .macro BANKING_START
-	pha
-	lda ram_bank
-	sta bank_save
-	stz ram_bank
-	pla
+;	pha
+;	lda ram_bank
+;	sta bank_save
+;	stz ram_bank
+;	pla
 .endmacro
 
 .macro BANKING_END
-	pha
-	lda bank_save
-	sta ram_bank
-	pla
+;	pha
+;	lda bank_save
+;	sta ram_bank
+;	pla
 .endmacro
 
 .bss

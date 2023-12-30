@@ -1,6 +1,6 @@
 
 
-	*=$fe00
+	*=$fe30
 
 DOS	=$4000
 
@@ -13,25 +13,33 @@ dos_unlsn	=DOS + 3 * 5
 dos_listn	=DOS + 3 * 6
 dos_talk	=DOS + 3 * 7	; note: currently same as listn
 
-serial_tlklstn	=$f0d7
+dos_init	=DOS + 3 * 8
+
+; banking
 
 BANK		=$e802
 
 DOSBANK		=14	; DOS runs in memory mapped from $070000-$077fff
 BASBANK		=0	; BASIC runs in bank 0
 
+; variables
 
 dos_flags	=$03fe	; for testing for now
-
-DOS_TALK	=$80
-DOS_LISTEN	=$40
 
 curdev		=$d4
 cursec		=$d3
 
+; constants (dos_flags)
+
+DOS_TALK	=$80
+DOS_LISTEN	=$40
+
 #if 1
 	
 install	.(
+	lda #%01100000
+	sta $e801	; make ROM writable
+
 	lda #$4c	; JMP
 	ldx #<talk_listn_unlstn
 	ldy #>talk_listn_unlstn
@@ -71,6 +79,17 @@ install	.(
 	lda #$ea	; NOP
 	sta $f1a1
 
+	lda #%11100000
+	sta $e801	; write protect ROM
+
+	php
+	sei
+	lda #DOSBANK
+	sta BANK
+	jsr dos_init
+	lda #BASBANK
+	sta BANK
+	plp
 	rts
 	.)
 

@@ -22,6 +22,8 @@
 	jmp dos_listn   ; 6
 	jmp dos_talk    ; 7
 
+	jmp dos_init    ; 8
+
 ; GEOS
 ;	jmp dos_OpenDisk         ; 8
 ;	jmp dos_ReadBuff         ; 9
