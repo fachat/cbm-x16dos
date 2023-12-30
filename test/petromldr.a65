@@ -70,7 +70,7 @@ tl	lda text,y
 	bne tl
 tend	rts
 text
-	.asc 13,"INIT WITH ",13,"SYS 65024",13, 0	
+	.asc 13,"INIT WITH ",13,"SYS 65024+3*16",13, 0	
 petrom
 	.bin 0,0, "dosromcomp"
 dosrom
