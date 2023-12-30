@@ -23,6 +23,9 @@
 SPI_CTRL      = VERA_SPI_CTRL
 SPI_DATA      = VERA_SPI_DATA
 
+SPI_CTRL_SELECT_SDCARD = $01
+SPI_CTRL_SELECT_MASK   = $01
+
 ;-----------------------------------------------------------------------------
 ; deselect card
 ;
