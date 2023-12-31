@@ -9,7 +9,7 @@
  * to $1000 in bank 7 (where the USB driver code resides)
  */
 
-COMPANION	=$fe30
+SDC_COMPANION	=$fe30
 
 	.word $0401
 	*=$0401

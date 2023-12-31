@@ -6,7 +6,7 @@
 ; Also, it must run in the upper half of bank 0, as it
 ; switches the lower half to bank 7, to run the dos_init.
 ; 
-; It also requires the value of "COMPANION" to be set
+; It also requires the value of "SDC_COMPANION" to be set
 ; to the place in the ROM where to copy the link code.
 
 .(
@@ -60,7 +60,7 @@ DOS_LISTEN	=$40
 	; copy over the patch into ROM
 	ldx #rompatch_end - rompatch_start
 l0	lda PATCH-1,x
-	sta COMPANION-1,x
+	sta SDC_COMPANION-1,x
 	dex
 	bne l0
 
@@ -126,7 +126,7 @@ l0	lda PATCH-1,x
 PATCH:
 	; assemble for ROM address
 
-	*=COMPANION
+	*=SDC_COMPANION
 rompatch_start:
 
 	; AC is free. It needs to be #$40 when going back
