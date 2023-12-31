@@ -28,10 +28,10 @@ dos_init	=DOS + 3 * 8
 
 ; banking
 
-#ifndef BANK
-BANK		=$e802
-#else
+#ifldef BANK
 .assert BANK == $e802, "BANK register incorrectly defined"
+#else
+BANK		=$e802
 #endif
 
 
