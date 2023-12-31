@@ -16,7 +16,7 @@
 .import create_fat32_path_only_dir, create_fat32_path_only_name
 .import alloc_context, alloc_context2, free_context
 
-.import parse_dos_filename
+.import parse_dir_filename
 .import buffer
 .import file_type, filter0, filter1, medium
 
@@ -97,7 +97,7 @@ dir_open:
 
 	ldx #1
 @cont1:
-	jsr parse_dos_filename
+	jsr parse_dir_filename
 	bcc @1
 	lda #$30 ; syntax error
 	jmp @dir_open_err
