@@ -1,10 +1,13 @@
 
 
-petromldr: petromldr.a65 dosromcomp dos.bin
+dosromldr: dosromldr.a65 dosromcomp dos.bin
 	xa -w -XMASM -o $@ $<
 
 dosromcomp: dosromcomp.a65
 	xa -XMASM -o $@ $<
 
+dos.bin:
+	make -C ..
+
 clean:
-	rm -f petromldr dosromcomp
+	rm -f dosromldr dosromcomp
