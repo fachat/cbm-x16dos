@@ -28,7 +28,12 @@ dos_init	=DOS + 3 * 8
 
 ; banking
 
+#ifndef BANK
 BANK		=$e802
+#else
+.assert BANK == $e802, "BANK register incorrectly defined"
+#endif
+
 
 DOSBANK		=14	; DOS runs in memory mapped from $070000-$077fff
 BASBANK		=0	; BASIC runs in bank 0
