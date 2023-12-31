@@ -166,10 +166,7 @@ talk_listn_unlstn .(
 	clc
 	rts
 
-no_dev	asl
-	eor #$ff
-	and flags
-	sta flags
+no_dev	sta flags
 	plx
 	plp
 orig_unlsn
