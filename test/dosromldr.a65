@@ -30,32 +30,25 @@ eol	.word 0			; BASIC link pointer, 0 means end of code
 	rep #%00010000
 	.xl
 	
-	; make ROM writable
-	lda #%01100000
-	sta $e801
-
-	; copy petromcomp over ROM at page $dfxx
-	ldy #0
-pc1	lda petrom,y
-	sta COMPANION,y
-	iny
-	cpy #dosrom - petrom
-	bne pc1
-
-	; write-protect ROM again
-	lda #%11100000
-	sta $e801	
-
-	ldx #0
-pc2	lda dosrom,x
-	sta $074000,x
-	inx
-	cpx #end - dosrom
+	ldx #end - dosrom
+pc2	lda dosrom-1,x
+	sta $074000-1,x
+	dex
 	bne pc2
 
+	ldx #dosrom - MOVE
+pc3	lda MOVE-1,x
+	sta $9000-1,x
+	dex
+	bne pc3
+	
 	; 8bit index registers
 	sep #%00010000
 	.xs
+
+	; install the patch (in dosromcomp.a65)
+	jsr install
+
 	; emulation mode
 	sec
 	xce
@@ -70,9 +63,15 @@ tl	lda text,y
 	bne tl
 tend	rts
 text
-	.asc 13,"INIT WITH ",13,"SYS 65024+3*16",13, 0	
-petrom
-	.bin 0,0, "dosromcomp"
+	.asc 13,"INSTALLATION SUCCESSFUL",13, 0	
+
+MOVE:
+	*=$9000
+
+#include "dosromcomp.a65"
+
+	*=*-$9000+MOVE
+
 dosrom
 	.bin 0,0, "dos.bin"
 end

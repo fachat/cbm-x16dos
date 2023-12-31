@@ -1,9 +1,20 @@
 
+; --------------------------------------------------------
+; This installs the patches to link the CMDR-DOS into the
+; PET BASIC 4 ROM. It requires that the DOS "rom.bin" is
+; loaded into the bank 7 (14 as value for $e802) at $4000.
+; Also, it must run in the upper half of bank 0, as it
+; switches the lower half to bank 7, to run the dos_init.
+; 
+; It also requires the value of "COMPANION" to be set
+; to the place in the ROM where to copy the link code.
 
-	*=$fe30
+.(
 
+; address of the DOS in DOSBANK
 DOS	=$4000
 
+; DOS jumptable
 dos_seclstn	=DOS + 3 * 0
 dos_sectlk	=DOS + 3 * 1
 dos_iecin	=DOS + 3 * 2
@@ -22,28 +33,36 @@ BANK		=$e802
 DOSBANK		=14	; DOS runs in memory mapped from $070000-$077fff
 BASBANK		=0	; BASIC runs in bank 0
 
-; variables
+; variables in BASIC address space
 
-flags	=$03fe	; for testing for now
+flags		=$03fe	; for testing for now
 
-curdev		=$d4
-cursec		=$d3
-status		=$96
+curdev		=$d4	; current device (unit) number
+cursec		=$d3	; current secondary address
+
+status		=$96	; IEEE status
 
 ; DOS bank vars
 
-dos_status	=$0287
+dos_status	=$0287	; from dos inc/banks.inc
 
-; constants (flags)
+; constants (flags) - checked for with BVx/BPL/BMI
 
 DOS_TALK	=$80
 DOS_LISTEN	=$40
 
-#if 1
+; install the patch and binding
 	
-install	.(
+&install .(
 	lda #%01100000
 	sta $e801	; make ROM writable
+
+	; copy over the patch into ROM
+	ldx #rompatch_end - rompatch_start
+l0	lda PATCH-1,x
+	sta COMPANION-1,x
+	dex
+	bne l0
 
 	lda #$4c	; JMP
 	ldx #<talk_listn_unlstn
@@ -87,6 +106,8 @@ install	.(
 	lda #%11100000
 	sta $e801	; write protect ROM
 
+	; init the DOS
+
 	php
 	sei
 	lda #DOSBANK
@@ -98,7 +119,15 @@ install	.(
 	rts
 	.)
 
-#endif
+	; -------------------------------------------------------
+	; the following code is copied into the ROM and called
+	; from the patches into the IEEE code
+
+PATCH:
+	; assemble for ROM address
+
+	*=COMPANION
+rompatch_start:
 
 	; AC is free. It needs to be #$40 when going back
 talk_listn_unlstn .(
@@ -265,5 +294,11 @@ not_dos
 	jmp $f1c5
 	.)
 
-	
+
+rompatch_end:
+
+	; fix up PC	
+	*=PATCH + (rompatch_end - rompatch_start)
+
+.)
 

@@ -1,10 +1,7 @@
 
 
-dosromldr: dosromldr.a65 dosromcomp dos.bin
-	xa -w -XMASM -o $@ $<
-
-dosromcomp: dosromcomp.a65
-	xa -XMASM -o $@ $<
+dosromldr: dosromldr.a65 dosromcomp.a65 dos.bin
+	xa -w -XMASM -P $@.lst -o $@ $<
 
 dos.bin:
 	make -C ..
