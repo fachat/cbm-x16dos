@@ -47,7 +47,7 @@ pc3	lda MOVE-1,x
 	.xs
 
 	; install the patch (in dosromcomp.a65)
-	jsr install
+	jsr sdcard_install
 
 	; emulation mode
 	sec

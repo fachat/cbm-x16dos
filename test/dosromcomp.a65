@@ -53,7 +53,7 @@ DOS_LISTEN	=$40
 
 ; install the patch and binding
 	
-&install .(
+&sdcard_install .(
 	lda #%01100000
 	sta $e801	; make ROM writable
 
