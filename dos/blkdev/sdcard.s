@@ -3,6 +3,10 @@
 ; Copyright (C) 2020 Frank van den Hoef
 ;-----------------------------------------------------------------------------
 
+;
+; TODO: fix according to: http://elm-chan.org/docs/mmc/mmc_e.html
+;
+
 	.include "lib.inc"
 	.include "sdcard.inc"
 	.include "spi.inc"
@@ -12,6 +16,9 @@
 	.import spi_ctrl, spi_read, spi_write, spi_select, spi_deselect, spi_read_sector, spi_write_sector
 
 	.bss
+
+sd_card_error_timeout_busy	= $ff
+
 cmd_idx = sdcard_param
 cmd_arg = sdcard_param + 1
 cmd_crc = sdcard_param + 5
@@ -22,8 +29,14 @@ sector_buffer_end:
 
 sdcard_param:
 	.res 1
-sector_lba:
+sector_lba_x:
 	.res 4 ; dword (part of sdcard_param) - LBA of sector to read/write
+	.res 1
+
+sector_lba:
+	.res 4
+
+is_blk_addr:
 	.res 1
 
 timeout_cnt:       .byte 0
@@ -67,9 +80,6 @@ wait_ready:
 ; first byte of result in A, clobbers: Y
 ;-----------------------------------------------------------------------------
 send_cmd:
-	; Make sure card is deselected
-	jsr spi_deselect
-
 	; Select card
 	jsr spi_select
 
@@ -91,7 +101,8 @@ send_cmd:
 	jsr spi_write
 
 	; Wait for response
-	ldy #(10 + 1)
+	;ldy #(10 + 1)
+	ldy #$30	; sd_cmd_response_retries
 @1:	dey
 	beq @error	; Out of retries
 	jsr spi_read
@@ -164,58 +175,162 @@ sdcard_init:
 	lda #SPI_CTRL_SLOWCLK
 	jsr spi_ctrl
 
+	; make sure it's deselected
+	jsr spi_deselect
+
+	; ---------------------------
 	; Generate at least 74 SPI clock cycles with device deselected
+
 	ldx #10
 @1:	jsr spi_read
 	dex
 	bne @1
 
+	; ---------------------------
+	; repeatedly send CMD0 
+
+	ldx #$30	; sd_cmd_response_retries
+@resend0:
 	; Enter idle state
 	send_cmd_inline 0, 0
-	bcs @2
-	jmp @error
-@2:
+	bcc @error1
+	
 	cmp #1	; In idle state?
 	beq @3
+
+	dex
+	bne @resend0
+
 	jmp @error
-@3:
+
+@3:	; ---------------------------
+	; CMD8
+	; try to init SDHC - if it fails, fall back to old (SDSC/MMC)
+
 	; SDv2? (SDHC/SDXC)
 	send_cmd_inline 8, $1AA
-	bcs @4
-	jmp @error
-@4:
+	bcc @error1
+
 	cmp #1	; No error?
-	beq @5
+	bne @init_sd1_mmc
+
+	; Invalid card (or card not handled yet)
+
+	; screw this
+	jsr spi_read
+	jsr spi_read
+
+	; is this $01?
+	jsr spi_read
+	cmp #$01
+	bne @error1
+
+	; is this $aa?
+	jsr spi_read
+	cmp #$aa
+	beq @init_sdhc
+
+@error1:
 	jmp @error
-@5:
-@sdv2:	; Receive remaining 4 bytes of R7 response
-	jsr spi_read
-	jsr spi_read
-	jsr spi_read
-	jsr spi_read
 
-	; Wait for card to leave idle state
-@6:	send_cmd_inline 55, 0
-	bcs @7
-	bra @error
-@7:
+	;----------------------------
+@init_sd1_mmc:
+lda #'S'
+sta $8008
+	; SDSC / mmc
+	ldx #$30	; repeat count
+@sd1_mmc_loop:
+	; init card using ACMD41 and parameter $00000000
+	send_cmd_inline 55, $00000000
+	bcc @error1
+
+	cmp #$01
+	bne @init_mmc
+
+	; ------------------
+	; CMD41
+
+	send_cmd_inline 41, $00000000
+	bcc @error1
+	
+	cmp #$00
+	beq @do58
+	
+	dex
+	bne @sd1_mmc_loop
+@error2:
+	jmp @error
+
+	;----------------------------
+@init_mmc:
+lda #'M'
+sta $8008
+	send_cmd_inline 1, $00000000
+	bcc @error1
+	cmp #$01
+	bne @error1
+	sec
+	rts
+
+	;----------------------------
+	; SDHC
+	; init card using ACMD41 and parameter $40000000
+@init_sdhc:
+lda #'H'
+sta $8008
+	ldx #$30	; repeat count
+@sdhc_loop:
+inc $8009
+	send_cmd_inline 55, $00000000
+	bcc @error2
+
+	cmp #$01
+	bne @init_mmc
+
+	; ------------------
+	; CMD41
+
 	send_cmd_inline 41, $40000000
-	bcs @8
-	bra @error
-@8:
-	cmp #0
-	bne @6
+	bcc @error
 
+	cmp #$00
+	beq @do58
+
+	dex
+	bne @sdhc_loop
+	jmp @error
+
+	; ---------------------------
+	; CMD58
+@do58:
+inc $800a
 	; Check CCS bit in OCR register
 	send_cmd_inline 58, 0
-	cmp #0
-	jsr spi_read
-	and #$40	; Check if this card supports block addressing mode
-	beq @error
-	jsr spi_read
-	jsr spi_read
-	jsr spi_read
+	bcc @error
 
+inc $800b
+	jsr spi_read
+	pha
+	jsr spi_read
+	jsr spi_read
+	jsr spi_read
+	pla
+sta $8004
+	asl
+	sta is_blk_addr
+	bpl @is_sdsc
+
+	;and #$40	; Check if this card supports block addressing mode
+	;beq @is_sdhc
+	
+
+	; ---------------------------
+	; CMD16 - set block size to 512 bytes
+@cmd16:
+	send_cmd_inline 16, $00000200
+	bcc @error
+
+@is_sdsc:
 	; Select full speed
 	jsr spi_deselect
 	lda #0
@@ -231,6 +346,42 @@ sdcard_init:
 	clc
 	rts
 
+;-----------------------------------------------------------------------------
+; prep cmd_arg from sector_lba
+;-----------------------------------------------------------------------------
+prep_sector_addr:
+	bit is_blk_addr
+	bmi @do_blk
+
+	; scale block address to byte address
+	; i.e. multiply by $200
+	lda sector_lba +2
+	pha
+	lda sector_lba +1
+	pha
+	lda sector_lba +0
+	asl
+	sta cmd_arg +1
+	pla
+	rol
+	sta cmd_arg +2
+	pla
+	rol
+	sta cmd_arg +3
+	
+	stz cmd_arg +0
+	rts
+
+@do_blk:
+	lda sector_lba
+	sta cmd_arg
+	lda sector_lba+1
+	sta cmd_arg+1
+	lda sector_lba+2
+	sta cmd_arg+2
+	lda sector_lba+3
+	sta cmd_arg+3
+	rts
 
 ;-----------------------------------------------------------------------------
 ; sdcard_read_sector
@@ -238,13 +389,17 @@ sdcard_init:
 ; result: C=0 -> error, C=1 -> success
 ;-----------------------------------------------------------------------------
 sdcard_read_sector:
+inc $8000
 	; Send READ_SINGLE_BLOCK command
 	lda #($40 | 17)
 	sta cmd_idx
 	lda #1
 	sta cmd_crc
-	jsr send_cmd
 
+	jsr prep_sector_addr
+
+	jsr send_cmd
+sta $8003
 	; Wait for start of data packet
 	ldx #0
 @1:	ldy #0
@@ -256,6 +411,7 @@ sdcard_read_sector:
 	dex
 	bne @1
 
+inc $8002
 	; Timeout error
 	jsr spi_deselect
 	clc
@@ -263,6 +419,7 @@ sdcard_read_sector:
 
 @start:	jsr spi_read_sector		; fast read of 512 bytes into sector_buffer
 
+inc $8001
 	; Success
 	jsr spi_deselect
 	sec
@@ -279,6 +436,9 @@ sdcard_write_sector:
 	sta cmd_idx
 	lda #1
 	sta cmd_crc
+
+	jsr prep_sector_addr
+
 	jsr send_cmd
 	cmp #00
 	bne @error
@@ -374,3 +534,48 @@ sdcard_check_alive:
 	jsr spi_deselect
 	plp
 	rts
+
+;-----------------------------------------------------------------------------
+; slowly moving to routines from the Steckschwein that can handle
+; more types of SD Cards and is better maintained.
+
+;---------------------------------------------------------------------
+; select sd card, pull CS line to low with busy wait
+; out:
+;   see below
+;---------------------------------------------------------------------
+;@name: "sd_select_card"
+;@out: C, "C = 0 on success, C = 1 on error (timeout)"
+;@clobbers: A,X,Y
+;@desc: "select sd card, pull CS line to low with busy wait"
+sd_select_card:
+	jsr spi_select
+
+; fall through to sd_busy_wait
+;---------------------------------------------------------------------
+; wait while sd card is busy
+; C = 0 on success, C = 1 on error (timeout)
+;---------------------------------------------------------------------
+;@name: "sd_busy_wait"
+;@out: C, "C = 0 on success, C = 1 on error (timeout)"
+;@clobbers: A,X,Y
+;@desc: "wait while sd card is busy"
+sd_busy_wait:
+      ldx #$ff
+@l1:  lda #$ff
+      dex
+      beq @err
+
+      phx
+      jsr spi_read
+      plx
+      cmp #$ff
+      bne @l1
+      clc
+      rts
+@err: lda #sd_card_error_timeout_busy
+      sec
+      rts
+
+
+

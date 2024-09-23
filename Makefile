@@ -27,7 +27,7 @@ CFG_DIR=$(BUILD_DIR)/cfg
 DOS_SOURCES = \
 	dos/fat32/fat32.s \
 	dos/fat32/mkfs.s \
-	dos/fat32/sdcard.s \
+	dos/blkdev/sdcard.s \
 	dos/spi/spi-UPET.s \
 	dos/fat32/text_input.s \
 	dos/zeropage.s \
@@ -47,9 +47,9 @@ GENERIC_DEPS = \
 DOS_DEPS = \
 	$(GENERIC_DEPS) \
 	dos/fat32/fat32.inc \
-	dos/fat32/lib.inc \
+	inc/lib.inc \
 	dos/fat32/regs.inc \
-	dos/fat32/sdcard.inc \
+	inc/sdcard.inc \
 	inc/spi.inc \
 	dos/fat32/text_input.inc \
 	dos/functions.inc \

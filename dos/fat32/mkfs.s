@@ -4,6 +4,7 @@
 ;-----------------------------------------------------------------------------
 
 .include "lib.inc"
+.include "regs.inc"
 
 ; sdcard.s
 .import sector_lba, sector_buffer

@@ -4,7 +4,7 @@
 ; (C)2020 Michael Steil, License: 2-clause BSD
 
 .include "fat32/fat32.inc"
-.include "fat32/sdcard.inc"
+.include "sdcard.inc"
 
 .import sdcard_init
 
