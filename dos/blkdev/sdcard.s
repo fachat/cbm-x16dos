@@ -235,8 +235,6 @@ sdcard_init:
 
 	;----------------------------
 @init_sd1_mmc:
-lda #'S'
-sta $8008
 	; SDSC / mmc
 	ldx #$30	; repeat count
 @sd1_mmc_loop:
@@ -263,8 +261,6 @@ sta $8008
 
 	;----------------------------
 @init_mmc:
-lda #'M'
-sta $8008
 	send_cmd_inline 1, $00000000
 	bcc @error1
 	cmp #$01
@@ -276,11 +272,8 @@ sta $8008
 	; SDHC
 	; init card using ACMD41 and parameter $40000000
 @init_sdhc:
-lda #'H'
-sta $8008
 	ldx #$30	; repeat count
 @sdhc_loop:
-inc $8009
 	send_cmd_inline 55, $00000000
 	bcc @error2
 
@@ -303,19 +296,16 @@ inc $8009
 	; ---------------------------
 	; CMD58
 @do58:
-inc $800a
 	; Check CCS bit in OCR register
 	send_cmd_inline 58, 0
 	bcc @error
 
-inc $800b
 	jsr spi_read
 	pha
 	jsr spi_read
 	jsr spi_read
 	jsr spi_read
 	pla
-sta $8004
 	asl
 	sta is_blk_addr
 	bpl @is_sdsc
@@ -389,7 +379,6 @@ prep_sector_addr:
 ; result: C=0 -> error, C=1 -> success
 ;-----------------------------------------------------------------------------
 sdcard_read_sector:
-inc $8000
 	; Send READ_SINGLE_BLOCK command
 	lda #($40 | 17)
 	sta cmd_idx
@@ -399,7 +388,6 @@ inc $8000
 	jsr prep_sector_addr
 
 	jsr send_cmd
-sta $8003
 	; Wait for start of data packet
 	ldx #0
 @1:	ldy #0
@@ -411,7 +399,6 @@ sta $8003
 	dex
 	bne @1
 
-inc $8002
 	; Timeout error
 	jsr spi_deselect
 	clc
@@ -419,7 +406,6 @@ inc $8002
 
 @start:	jsr spi_read_sector		; fast read of 512 bytes into sector_buffer
 
-inc $8001
 	; Success
 	jsr spi_deselect
 	sec

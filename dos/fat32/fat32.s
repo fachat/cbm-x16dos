@@ -279,14 +279,6 @@ load_sector_buffer:
 @do_load:
 	jsr sync_sector_buffer
 	set32 sector_lba, cur_context + context::lba
-lda sector_lba
-sta $8024
-lda sector_lba+1
-sta $8025
-lda sector_lba+2
-sta $8026
-lda sector_lba+3
-sta $8027
 	jsr sdcard_read_sector
 	bcc @1
 	rts
@@ -1237,7 +1229,6 @@ mount:
 	asl
 	asl
 	tax
-inc $8020
 	; Check partition type
 	lda sector_buffer + $1BE + 4, x
 	cmp #$0B
@@ -1261,9 +1252,7 @@ inc $8020
 	; Read first sector of partition
 	set32 cur_context + context::lba, cur_volume + fs::lba_partition
 	jsr load_sector_buffer
-inc $8021
 	bcc @error
-inc $8022
 	; Some sanity checks
 	lda sector_buffer + 510 ; Check signature
 	cmp #$55
