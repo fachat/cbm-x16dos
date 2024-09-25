@@ -93,27 +93,19 @@ spi_ctrl:
 spi_read_sector:
 
 	; Read 512 bytes of sector data
-        ldx #$FF
         ldy #0
-        stx SPI_DATA            ; 4
 
-@4:     bit SPI_CTRL            ; 4
-        bmi @4                  ; 2 + 1 if branch
-        lda SPI_DATA            ; 4
-        sta sector_buffer + 0, y
-        iny
-        bne @4			; because we used SPI_DATA instead of SPI_PEEK, next transfer is already initiated
+@1:	jsr spi_read
+	sta sector_buffer + 0, y
+	iny
+	bne @1
 
-        ; Y already 0 at this point
-@6:     bit SPI_CTRL            ; 4
-        bmi @6                  ; 2 + 1 if branch
-        lda SPI_DATA            ; 4
-        sta sector_buffer + 256, y
-        iny
-        bne @6
+@2:	jsr spi_read
+	sta sector_buffer + 256,y
+	iny
+	bne @2
 
-        ; Read CRC bytes
-	lda SPI_PEEK		; first CRC byte, ignored
+	jsr spi_read		; first CRC byte
         jmp spi_read		; second CRC byte
 
 ;-----------------------------------------------------------------------------
