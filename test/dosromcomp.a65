@@ -59,6 +59,8 @@ DOS_LISTEN	=$40
 ; install the patch and binding
 	
 &sdcard_install .(
+	pha
+
 	lda #%01100000
 	sta $e801	; make ROM writable
 
@@ -113,10 +115,12 @@ l0	lda PATCH-1,x
 
 	; init the DOS
 
+	pla		; dos unit
+
 	php
 	sei
-	lda #DOSBANK
-	sta BANK
+	ldx #DOSBANK
+	stx BANK
 	jsr dos_init
 	lda #BASBANK
 	sta BANK

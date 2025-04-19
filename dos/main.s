@@ -89,10 +89,12 @@ CONTEXT_CMD  = $fd
 ; Initialize CMDR-DOS
 ;
 ; This is called once on a system RESET.
+; input:
+;   AC = dos unit number to use
 ;---------------------------------------------------------------
 dos_init:
 	BANKING_START
-	lda #8
+	;lda #8
 	sta dos_unit
 	; SD card needs detection and init
 	lda #$80
