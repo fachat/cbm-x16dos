@@ -344,6 +344,8 @@ dos_unlsn:
 
 ;---------------------------------------------------------------
 ; Execute OPEN with filename
+	jsr buf_pet_to_ascii
+
 	lda buffer
 	cmp #'$'
 	bne @unlsn_open_file
@@ -376,6 +378,7 @@ dos_unlsn:
 ; UNLISTEN on command channel will ignore whether it was
 ; and OPEN command; it will always trigger command execution
 @unlisten_cmdch:
+	jsr buf_pet_to_ascii
 	jsr cmdch_exec
 
 @unlsn_end:
@@ -547,5 +550,29 @@ dos_macptr:
 
 @1:	sec ; error: unsupported
 	bra @end
+
+buf_pet_to_ascii:
+	ldy #0
+@1:	cpy buffer_len
+	beq @2
+
+	lda buffer,y
+	; convert PETSCII to ASCII
+	cmp #64
+	bcc @3
+	cmp #96
+	bcc @4
+	cmp #192
+	bcc @3
+	cmp #224
+	bcs @3
+	adc #128-33
+@4:	adc #32
+@3:	; end convert
+	sta buffer,y
+	iny
+	bne @1
+
+@2:	rts
 
 

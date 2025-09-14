@@ -818,7 +818,7 @@ cmd_r:
 	ldx r0s
 	inx
 	lda buffer,x
-	cmp #'D'
+	cmp #'d'
 	bne :+
 	jmp cmd_rd
 :	cmp #'-'
@@ -827,10 +827,10 @@ cmd_r:
 @minus:
 	inx
 	lda buffer,x
-	cmp #'H'
+	cmp #'h'
 	bne :+
 	jmp cmd_rh
-:	cmp #'P'
+:	cmp #'p'
 	bne :+
 	jmp cmd_rp
 :	lda #$31 ; syntax error: unknown command
@@ -856,7 +856,7 @@ cmd_s:
 :	cmp #'9'
 	bne :+
 	jmp cmd_s9
-:	cmp #'D'
+:	cmp #'d'
 	bne :+
 	jmp cmd_sd
 :	lda #$31 ; syntax error: unknown command
@@ -870,13 +870,13 @@ cmd_c:
 	ldx r0s
 	inx
 	lda buffer,x
-	cmp #'P'
+	cmp #'p'
 	bne :+
 	jmp cmd_cp_decimal
-:	cmp #$d0 ; (shifted 'P')
+:	cmp #'P'	;$d0 ; (shifted 'P')
 	bne :+
 	jmp cmd_cp_binary
-:	cmp #'D'
+:	cmp #'d'
 	bne :+
 	jmp cmd_cd
 :	jmp cmd_copy
@@ -896,11 +896,11 @@ cmd_g:
 @minus:
 	inx
 	lda buffer,x
-	cmp #'P'
+	cmp #'p'
 	bne :+
 	jmp cmd_gp
 :	lda buffer,x
-	cmp #'D'
+	cmp #'d'
 	bne :+
 	jmp cmd_gd
 :	lda #$31 ; syntax error: unknown command
@@ -914,7 +914,7 @@ cmd_m:
 	ldx r0s
 	inx
 	lda buffer,x
-	cmp #'D'
+	cmp #'d'
 	bne :+
 	jmp cmd_md
 :	cmp #'-'
@@ -925,13 +925,13 @@ cmd_m:
 @minus:
 	inx
 	lda buffer,x
-	cmp #'R'
+	cmp #'r'
 	bne :+
 	jmp cmd_mr
-:	cmp #'W'
+:	cmp #'w'
 	bne :+
 	jmp cmd_mw
-:	cmp #'E'
+:	cmp #'e'
 	bne :+
 	jmp cmd_me
 :	lda #$31 ; syntax error: unknown command
@@ -953,25 +953,25 @@ cmd_b:
 @minus:
 	inx
 	lda buffer,x
-	cmp #'P'
+	cmp #'p'
 	bne :+
 	jmp cmd_bp
-:	cmp #'A'
+:	cmp #'a'
 	bne :+
 	jmp cmd_ba
-:	cmp #'F'
+:	cmp #'f'
 	bne :+
 	jmp cmd_bf
-:	cmp #'S'
+:	cmp #'s'
 	bne :+
 	jmp cmd_bs
-:	cmp #'R'
+:	cmp #'r'
 	bne :+
 	jmp cmd_br
-:	cmp #'W'
+:	cmp #'w'
 	bne :+
 	jmp cmd_bw
-:	cmp #'E'
+:	cmp #'e'
 	bne :+
 	jmp cmd_be
 :	lda #$31 ; syntax error: unknown command
@@ -993,13 +993,13 @@ cmd_f:
 @minus:
 	inx
 	lda buffer,x
-	cmp #'L'
+	cmp #'l'
 	bne :+
 	jmp cmd_fl
-:	cmp #'U'
+:	cmp #'u'
 	bne :+
 	jmp cmd_fu
-:	cmp #'R'
+:	cmp #'r'
 	bne :+
 	jmp cmd_fr
 :	lda #$31 ; syntax error: unknown command
@@ -1043,10 +1043,10 @@ cmd_u0ext:
 cmd_u0_m:
 	ldx r0s
 	lda buffer+4,x
-	cmp #'R'
+	cmp #'r'
 	bne :+
 	jmp cmd_u0_mr
-:	cmp #'W'
+:	cmp #'w'
 	bne :+
 	jmp cmd_u0_mw
 :	lda #$31 ; syntax error: unknown command
@@ -1055,39 +1055,39 @@ cmd_u0_m:
 
 ;---------------------------------------------------------------
 cmds:
-	.byte 'I' ; initialize
-	.byte 'V' ; validate
-	.byte 'N' ; new
-	.byte 'R' ; rename
+	.byte 'i' ; initialize
+	.byte 'v' ; validate
+	.byte 'n' ; new
+	.byte 'r' ; rename
 	          ; 'RD'  remove directory
 	          ; 'R-H' rename header
 	          ; 'R-P' rename partition
-	.byte 'S' ; scratch
+	.byte 's' ; scratch
 	          ; 'S-*' swap
-	.byte 'C' ; copy
+	.byte 'c' ; copy
 	          ; 'CP'  change partition
 	          ; 'CD'  change directory
-	.byte 'D' ; duplicate
-	.byte 'L' ; toggle lock
-	.byte 'G' ; 'G-P' get partition
+	.byte 'd' ; duplicate
+	.byte 'l' ; toggle lock
+	.byte 'g' ; 'G-P' get partition
 	          ; 'G-D' get disk change
-	.byte 'M' ; 'MD'  make directory
+	.byte 'm' ; 'MD'  make directory
 	          ; 'M-R' memory read
 	          ; 'M-W' memory write
 	          ; 'M-E' memory execute
-	.byte 'B' ; 'B-P' buffer pointer
+	.byte 'b' ; 'B-P' buffer pointer
 	          ; 'B-A' block allocate
 	          ; 'B-F' block free
 	          ; 'B-S' block status
 	          ; 'B-R' block read
 	          ; 'B-W' block write
 	          ; 'B-E' block execute
-	.byte 'U' ; 'Ux'  user
-	.byte 'F' ; 'F-L' file lock
+	.byte 'u' ; 'Ux'  user
+	.byte 'f' ; 'F-L' file lock
 	          ; 'F-U' file unlock
 	          ; 'F-R' file restore
-	.byte 'W' ; 'W-n' write protect
-	.byte 'P' ; 'P'   position
+	.byte 'w' ; 'W-n' write protect
+	.byte 'p' ; 'P'   position
 	.byte 255 ; echo (internal)
 cmds_end:
 cmd_ptrs:
@@ -1110,14 +1110,14 @@ cmd_ptrs:
 
 ;---------------------------------------------------------------
 u0ext_cmds:
-	.byte 'S' ; set sector interleave
-	.byte 'R' ; set retries
-	.byte 'T' ; test ROM checksum
-	.byte 'B' ; enable/disable fast serial
-	.byte 'V' ; enable/disable verify
-	.byte 'D' ; set directory sector interleave
-	.byte 'L' ; enable/disable large REL file support
-	.byte 'M' ; 'MR' burst memory read
+	.byte 's' ; set sector interleave
+	.byte 'r' ; set retries
+	.byte 't' ; test ROM checksum
+	.byte 'b' ; enable/disable fast serial
+	.byte 'v' ; enable/disable verify
+	.byte 'd' ; set directory sector interleave
+	.byte 'l' ; enable/disable large REL file support
+	.byte 'm' ; 'MR' burst memory read
 	          ; 'MW' burst memory write
 u0ext_cmds_end:
 u0ext_cmd_ptrs:
