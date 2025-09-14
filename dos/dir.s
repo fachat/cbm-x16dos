@@ -160,6 +160,7 @@ dir_open:
 	ldx #0
 @3:	lda fat32_dirent + dirent::name,x
 	beq @4
+	jsr petconv
 	jsr storedir
 	inx
 	bne @3
@@ -397,6 +398,7 @@ read_dir_entry:
 	ldx #0
 :	lda fat32_dirent + dirent::name, x
 	beq :+
+	jsr petconv
 	jsr storedir
 	inx
 	bne :-
@@ -650,3 +652,16 @@ shr10:
 	ror fat32_size + 0
 
 	rts
+
+petconv:
+	cmp #64
+	bcc @1
+	cmp #96
+	bcc @2
+	cmp #128
+	bcs @1
+	sbc #31+128
+@2:	eor #128
+@1:
+	rts
+
